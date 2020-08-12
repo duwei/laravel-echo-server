@@ -40,12 +40,13 @@ export class Channel {
      */
     join(socket, data): void {
         if (data.channel) {
-            if (this.isPrivate(data.channel)) {
-                this.joinPrivate(socket, data);
-            } else {
-                socket.join(data.channel);
-                this.onJoin(socket, data.channel);
-            }
+            // if (this.isPrivate(data.channel)) {
+            //     this.joinPrivate(socket, data);
+            // } else {
+            //     socket.join(data.channel);
+            //     this.onJoin(socket, data.channel);
+            // }
+            this.joinAuthChannel(socket, data)
         }
     }
 
@@ -84,6 +85,7 @@ export class Channel {
             if (this.options.devMode) {
                 Log.info(`[${new Date().toISOString()}] - ${socket.id} left channel: ${channel} (${reason})`);
             }
+            socket.emit("leave", channel, reason);
         }
     }
 
@@ -127,6 +129,29 @@ export class Channel {
                 .emit('subscription_error', data.channel, error.status);
         });
     }
+
+    /**
+     * Join auth server channel
+     */
+    joinAuthChannel(socket: any, data: any): void {
+        this.private.authenticate(socket, data).then(res => {
+            this.io.of('/').in(res.channel_data.name).clients((error, socketIds) => {
+                if (error) throw error;
+                socketIds.forEach(socketId => this.leave(this.io.sockets.sockets[socketId], res.channel_data.name, 'replaced'));
+                socket.join(res.channel_data.name);
+
+                this.onJoin(socket, res.channel_data.name);
+            });
+        }, error => {
+            if (this.options.devMode) {
+                Log.error(error.reason);
+            }
+
+            this.io.sockets.to(socket.id)
+                .emit('subscription_error', data.channel, error.status);
+        });
+    }
+
 
     /**
      * Check if a channel is a presence channel.

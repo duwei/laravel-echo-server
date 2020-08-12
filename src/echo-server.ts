@@ -20,13 +20,16 @@ export class EchoServer {
         clients: [],
         database: 'redis',
         databaseConfig: {
-            redis: {},
+            redis: {
+                "nodes" : [ {} ]
+            },
             sqlite: {
                 databasePath: '/database/laravel-echo-server.sqlite'
             }
         },
         devMode: false,
         host: null,
+        publicHost: "127.0.0.1",
         port: 6001,
         protocol: "http",
         socketio: {},
@@ -105,8 +108,11 @@ export class EchoServer {
             this.subscribers = [];
             if (this.options.subscribers.http)
                 this.subscribers.push(new HttpSubscriber(this.server.express, this.options));
-            if (this.options.subscribers.redis)
-                this.subscribers.push(new RedisSubscriber(this.options));
+            if (this.options.subscribers.redis) {
+                this.options.databaseConfig.redis.nodes.forEach(function (node) {
+                    this.subscribers.push(new RedisSubscriber(this.options, node));
+                }.bind(this))
+            }
 
             this.httpApi = new HttpApi(io, this.channel, this.server.express, this.options.apiOriginAllow);
             this.httpApi.init();
