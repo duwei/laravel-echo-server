@@ -22,10 +22,17 @@ export class RedisSubscriber implements Subscriber {
      * Create a new instance of subscriber.
      *
      * @param {any} options
+     * @param {any} node
      */
-    constructor(private options) {
-        this._keyPrefix = options.databaseConfig.redis.keyPrefix || '';
-        this._redis = new Redis(options.databaseConfig.redis);
+    constructor(private options, private node) {
+        this._keyPrefix = node.prefix || '';
+        this._redis = new Redis(node);
+        // this._redis.hset("echo-server-set", this._keyPrefix, options.public);
+        // if (node.world) {
+        //     this._redis.sadd(node.world + "-echo-server", options.public);
+        // } else {
+        //     node.world = '';
+        // }
     }
 
     /**
@@ -36,16 +43,17 @@ export class RedisSubscriber implements Subscriber {
     subscribe(callback): Promise<any> {
 
         return new Promise((resolve, reject) => {
-            this._redis.on('pmessage', (subscribed, channel, message) => {
+            this._redis.on('message', (channel, message) => {
                 try {
                     message = JSON.parse(message);
 
                     if (this.options.devMode) {
                         Log.info("Channel: " + channel);
                         Log.info("Event: " + message.event);
+                        Log.info("Event: " + message.data);
                     }
 
-                    callback(channel.substring(this._keyPrefix.length), message);
+                    callback(channel, message);
                 } catch (e) {
                     if (this.options.devMode) {
                         Log.info("No JSON message");
@@ -53,15 +61,15 @@ export class RedisSubscriber implements Subscriber {
                 }
             });
 
-            this._redis.psubscribe(`${this._keyPrefix}*`, (err, count) => {
-                if (err) {
-                    reject('Redis could not subscribe.')
-                }
+            // this._redis.psubscribe(`${this._keyPrefix}*`, (err, count) => {
+            //     if (err) {
+            //         reject('Redis could not subscribe.')
+            //     }
 
                 Log.success('Listening for redis events...');
 
                 resolve();
-            });
+            // });
         });
     }
 
@@ -78,6 +86,34 @@ export class RedisSubscriber implements Subscriber {
             } catch(e) {
                 reject('Could not disconnect from redis -> ' + e);
             }
+        });
+    }
+
+    subscribeChannel(channel:string): Promise<any> {
+        return new Promise((resolve, reject) => {
+            if (channel.startsWith(this.node.world)) {
+                this._redis.subscribe(channel, (err, count) => {
+                    if (err) {
+                        reject('Redis could not subscribe.')
+                    }
+                    Log.success('Subscribe channel : ' + channel);
+                })
+            }
+            resolve();
+        });
+    }
+
+    unsubscribeChannel(channel:string): Promise<any> {
+        return new Promise((resolve, reject) => {
+            if (channel.startsWith(this.node.world)) {
+                this._redis.unsubscribe(channel, (err, count) => {
+                    if (err) {
+                        reject('Redis could not unsubscribe.')
+                    }
+                    Log.success('Unsubscribe channel : ' + channel);
+                });
+            }
+            resolve();
         });
     }
 }

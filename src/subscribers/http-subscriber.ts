@@ -111,4 +111,16 @@ export class HttpSubscriber implements Subscriber {
 
         return false;
     }
+
+    subscribeChannel(channel:string): Promise<any> {
+        return new Promise((resolve, reject) => {
+            resolve();
+        })
+    }
+
+    unsubscribeChannel(channel:string): Promise<any> {
+        return new Promise((resolve, reject) => {
+            resolve();
+        })
+    }
 }

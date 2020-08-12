@@ -26,7 +26,7 @@ export class Channel {
     /**
      * Create a new channel instance.
      */
-    constructor(private io, private options) {
+    constructor(private io, private options, private subscribers) {
         this.private = new PrivateChannel(options);
         this.presence = new PresenceChannel(io, options);
 
@@ -40,12 +40,13 @@ export class Channel {
      */
     join(socket, data): void {
         if (data.channel) {
-            if (this.isPrivate(data.channel)) {
-                this.joinPrivate(socket, data);
-            } else {
-                socket.join(data.channel);
-                this.onJoin(socket, data.channel);
-            }
+            // if (this.isPrivate(data.channel)) {
+            //     this.joinPrivate(socket, data);
+            // } else {
+            //     socket.join(data.channel);
+            //     this.onJoin(socket, data.channel);
+            // }
+            this.joinAuthChannel(socket, data)
         }
     }
 
@@ -79,11 +80,23 @@ export class Channel {
                 this.presence.leave(socket, channel)
             }
 
+        if (socket) {
             socket.leave(channel);
+            }
 
             if (this.options.devMode) {
-                Log.info(`[${new Date().toISOString()}] - ${socket.id} left channel: ${channel} (${reason})`);
+                Log.info(`[${new Date().toLocaleTimeString()}] - ${socket.id} left channel: ${channel} (${reason})`);
             }
+            socket.emit("leave", channel, reason);
+
+            this.io.of('/').in(channel).clients((error, socketIds) => {
+                if (error) throw error;
+                if (socketIds.length == 0){
+                    this.subscribers.forEach(subscriber => {
+                        subscriber.unsubscribeChannel(channel);
+                    });
+                };
+            });
         }
     }
 
@@ -129,6 +142,41 @@ export class Channel {
     }
 
     /**
+     * Join auth server channel
+     */
+    joinAuthChannel(socket: any, data: any): void {
+        this.private.authenticate(socket, data).then(res => {
+            if (res.channel_data) {
+                this.io.of('/').in(res.channel_data.name).clients((error, socketIds) => {
+                    if (error) throw error;
+                    let maxClients = res.channel_data.user_info.max_clients || 1;
+                    if (maxClients > 0) {
+                        for(let i = maxClients-1; i < socketIds.length; i++) {
+                            this.leave(this.io.sockets.sockets[socketIds[i]], res.channel_data.name, 'replaced');
+                        }
+                    }
+                    // socketIds.forEach(socketId => this.leave(this.io.sockets.sockets[socketId], res.channel_data.name, 'replaced'));
+                    socket.join(res.channel_data.name);
+
+                    this.onJoin(socket, res.channel_data.name);
+                });
+            } else {
+                Log.error(JSON.stringify(res));
+                this.io.sockets.to(socket.id)
+                    .emit('subscription_error', data.channel, "server internal error");
+            }
+        }, error => {
+            if (this.options.devMode) {
+                Log.error(error.reason);
+            }
+
+            this.io.sockets.to(socket.id)
+                .emit('subscription_error', data.channel, error.status);
+        });
+    }
+
+
+    /**
      * Check if a channel is a presence channel.
      */
     isPresence(channel: string): boolean {
@@ -140,8 +188,22 @@ export class Channel {
      */
     onJoin(socket: any, channel: string): void {
         if (this.options.devMode) {
-            Log.info(`[${new Date().toISOString()}] - ${socket.id} joined channel: ${channel}`);
+            Log.info(`[${new Date().toLocaleTimeString()}] - ${socket.id} joined channel: ${channel}`);
         }
+        this.io.of('/').in(channel).clients((error, socketIds) => {
+            if (error) throw error;
+            if (socketIds.length == 1) {
+                this.subscribers.forEach(subscriber => {
+                    subscriber.subscribeChannel(channel);
+                });
+            }
+        });
+    }
+
+    doSubscribe(channel: string): void {
+    }
+
+    doUnsubscribe(channel: string): void {
     }
 
     /**

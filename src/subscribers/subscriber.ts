@@ -13,4 +13,7 @@ export interface Subscriber {
      * @return {Promise}
      */
     unsubscribe(): Promise<any>;
+
+    subscribeChannel(channel: string): Promise<any>;
+    unsubscribeChannel(channel: string): Promise<any>;
 }
