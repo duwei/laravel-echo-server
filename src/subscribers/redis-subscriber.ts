@@ -24,9 +24,9 @@ export class RedisSubscriber implements Subscriber {
      * @param {any} options
      */
     constructor(private options, node) {
-        this._keyPrefix = options.databaseConfig.redis.keyPrefix || '';
+        this._keyPrefix = node.keyPrefix || '';
         this._redis = new Redis(node);
-        this._redis.set("echo-server", options.public);
+        this._redis.set("echo-server-info", options.public);
     }
 
     /**

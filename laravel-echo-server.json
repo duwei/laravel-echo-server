@@ -13,11 +13,13 @@
 			"nodes" : [
 				{
 					"host": "localhost",
-					"port": "6379"
+					"port": "6379",
+					"keyPrefix": ""
 				},
 				{
 					"host": "localhost",
-					"port": "60379"
+					"port": "60379",
+					"keyPrefix": ""
 				}
 			]
 		},
