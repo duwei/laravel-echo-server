@@ -14,12 +14,12 @@
 				{
 					"host": "localhost",
 					"port": "6379",
-					"keyPrefix": ""
+					"prefix": ""
 				},
 				{
 					"host": "localhost",
-					"port": "60379",
-					"keyPrefix": ""
+					"port": "6379",
+					"prefix": ""
 				}
 			]
 		},
