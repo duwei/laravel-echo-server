@@ -1,0 +1,10 @@
+apps:
+  - name: "echo-server"
+    script: /app/echo/dist/cli/index.js
+    watch: false
+    interpreter: node
+    args: start --dir /app/echo/run/ --config laravel-echo-server.json
+    restart_delay: 1000
+    error_file: /app/echo/run/echo.error.log
+    out_file: /app/echo/run/echo.out.log
+    pid_file: /app/echo/run/echo.pid
