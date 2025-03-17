@@ -1,0 +1,52 @@
+graph TD
+    subgraph 客户端层
+        C1[客户端区域1]
+        C2[客户端区域2]
+        C3[客户端区域3]
+    end
+
+    subgraph 负载均衡层
+        LB1[Nginx/HAProxy]
+        LB2[Redis Sentinel]
+    end
+
+    subgraph Echo服务层
+        E1[Echo Server 1]
+        E2[Echo Server 2]
+        E3[Echo Server 3]
+    end
+
+    subgraph Laravel应用层
+        L1[Laravel App 1]
+        L2[Laravel App 2]
+    end
+
+    subgraph 数据存储层
+        R1[(Redis Master)]
+        R2[(Redis Slave 1)]
+        R3[(Redis Slave 2)]
+        DB[(Database Cluster)]
+    end
+
+    C1 & C2 & C3 -->|Sticky Session| LB1
+    LB1 -->|WebSocket| E1 & E2 & E3
+    E1 & E2 & E3 -->|Subscribe| R1
+    L1 & L2 -->|Publish| R1
+    R1 -->|Replication| R2 & R3
+    LB2 -->|Monitor| R1 & R2 & R3
+    L1 & L2 -->|Store| DB
+
+    style C1 fill:#f9f,stroke:#333,stroke-width:2px
+    style C2 fill:#f9f,stroke:#333,stroke-width:2px
+    style C3 fill:#f9f,stroke:#333,stroke-width:2px
+    style LB1 fill:#aaf,stroke:#333,stroke-width:2px
+    style LB2 fill:#aaf,stroke:#333,stroke-width:2px
+    style E1 fill:#afa,stroke:#333,stroke-width:2px
+    style E2 fill:#afa,stroke:#333,stroke-width:2px
+    style E3 fill:#afa,stroke:#333,stroke-width:2px
+    style L1 fill:#faa,stroke:#333,stroke-width:2px
+    style L2 fill:#faa,stroke:#333,stroke-width:2px
+    style R1 fill:#ffa,stroke:#333,stroke-width:2px
+    style R2 fill:#ffa,stroke:#333,stroke-width:2px
+    style R3 fill:#ffa,stroke:#333,stroke-width:2px
+    style DB fill:#ffa,stroke:#333,stroke-width:2px

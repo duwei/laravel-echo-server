@@ -1,0 +1,25 @@
+graph TD
+    Client[浏览器客户端]
+    Laravel[Laravel应用 <br/> Laravel 5.3+]
+    Echo[Laravel Echo Server <br/> Node.js 6.0+]
+    Redis[Redis服务器 <br/> Redis 3+]
+    
+    Client -->|1. WebSocket连接<br/>Socket.io| Echo
+    Laravel -->|2. 认证私有频道<br/>/broadcasting/auth| Echo
+    Laravel -->|3. 发布事件| Redis
+    Redis -->|4. 订阅事件| Echo
+    Echo -->|5. 广播消息| Client
+
+    subgraph 基础设施
+        Redis
+    end
+    
+    subgraph 应用层
+        Laravel
+        Echo
+    end
+
+    style Client fill:#f9f,stroke:#333,stroke-width:2px
+    style Laravel fill:#bbf,stroke:#333,stroke-width:2px
+    style Echo fill:#bfb,stroke:#333,stroke-width:2px
+    style Redis fill:#fbb,stroke:#333,stroke-width:2px
